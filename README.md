@@ -1,6 +1,6 @@
 # Global Distributor Finder
 
-Streamlit app for researching and ranking potential comfort-footwear distributors in a target country, then generating outreach and reply drafts grounded in the lead data.
+Streamlit app for researching and ranking potential comfort-footwear distributors in a target country, then generating outreach and reply drafts grounded in the lead data. The application now uses a lightweight local Retrieval-Augmented Generation (RAG) layer over previously scraped distributor website evidence.
 
 ## What the application does
 
@@ -12,6 +12,15 @@ The app has three working flows:
    Scores shortlisted distributors against the user's desired traits and explains the reasoning behind each score.
 3. Commercial drafting
    Generates personalized outreach emails and follow-up replies based on the selected distributor and the evidence gathered during discovery.
+
+## RAG in this application
+
+This application uses a lightweight local RAG workflow.
+
+- Retrieval corpus: previously scraped distributor website pages stored locally in SQLite
+- Retrieved units: cleaned and chunked text snippets from distributor pages such as homepage, about, contact, brands, and distribution pages
+- Generation layer: Gemini uses retrieved snippets as grounded evidence for lead scoring explanations and outreach drafting
+- Scope: the RAG layer is local-only and reuses scraped distributor evidence; SerpAPI is still used only for discovery
 
 ## Current product behavior
 
@@ -66,10 +75,27 @@ The app has three working flows:
 3. SerpAPI returns Google organic results for those queries.
 4. The app fetches each result page and extracts a text excerpt where possible.
 5. Gemini filters the raw evidence into likely real distributors only.
-6. Users can index discovered distributors into a local knowledge base that stores scraped pages, chunks, and embeddings.
-7. The app can reuse that local evidence before making a fresh SerpAPI call.
-8. Gemini scores the remaining leads from 0 to 100 using retrieved evidence when available.
-9. The user can then generate outreach or draft a response to an incoming distributor reply.
+6. Users can index discovered distributors into a local knowledge base that stores scraped pages, metadata, chunks, and embeddings.
+7. The local RAG layer retrieves the most relevant chunks for a new distributor search or a company-specific drafting task.
+8. The app can reuse that local evidence before making a fresh SerpAPI call.
+9. Gemini scores the remaining leads from 0 to 100 using retrieved evidence when available.
+10. Outreach generation uses retrieved company facts so the draft references locally stored evidence instead of unsupported claims.
+11. The user can then generate outreach or draft a response to an incoming distributor reply.
+
+## RAG workflow
+
+1. Discovery
+   SerpAPI is used to discover candidate distributor URLs and initial public evidence.
+2. Scraping
+   The app scrapes multiple relevant pages from each discovered distributor website.
+3. Cleaning and chunking
+   Scraped text is normalized, low-value pages are skipped, and useful page text is split into chunks.
+4. Local indexing
+   Chunks, metadata, and embeddings are stored in the local knowledge base.
+5. Retrieval
+   For a new search or drafting task, the app retrieves the top relevant local chunks, optionally filtered by country or company.
+6. Grounded generation
+   Gemini uses the retrieved snippets to explain lead fit and generate outreach drafts with citations/snippets shown in the UI.
 
 ## Configuration
 
